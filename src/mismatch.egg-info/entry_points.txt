@@ -1,0 +1,2 @@
+[console_scripts]
+mismatch = mismatch.main_class:main

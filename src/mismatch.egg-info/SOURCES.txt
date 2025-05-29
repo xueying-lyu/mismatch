@@ -1,0 +1,15 @@
+LICENSE
+MANIFEST.in
+README.md
+pyproject.toml
+setup.cfg
+src/mismatch.egg-info/PKG-INFO
+src/mismatch.egg-info/SOURCES.txt
+src/mismatch.egg-info/dependency_links.txt
+src/mismatch.egg-info/entry_points.txt
+src/mismatch.egg-info/requires.txt
+src/mismatch.egg-info/top_level.txt
+src/mismatch/adni_reference/adni_cluster_centroids.csv
+src/mismatch/adni_reference/adni_model_coefficients.csv
+src/mismatch/adni_reference/adni_residual_sd.csv
+tests/test_basic.py
