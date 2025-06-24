@@ -89,14 +89,15 @@ def compute_mean_thickness(subject_thickness_path, triangles, membership, ID, MR
 
 def load_partition_txts(folder, hemi):
     files = sorted(glob(os.path.join(folder, f"mean_thickness_*_{hemi}.txt")))
+    if not files:
+        raise FileNotFoundError(f"No mean_thickness files found for hemisphere '{hemi}' in: {folder}")
     dfs = []
     for file in files:
         df = pd.read_csv(file, sep=" ", header=None)
         df.columns = ["ID", "MRIDATE"] + [f"x_{hemi}_{i}" for i in range(df.shape[1] - 2)]
-        if f"x_{hemi}_4" in df.columns:
-            df = df.drop(columns=[f"x_{hemi}_4"])
         dfs.append(df)
     return pd.concat(dfs, ignore_index=True)
+
 
 def merge_thickness(input_folder, output_csv):
     left_df = load_partition_txts(input_folder, "left")

@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 import argparse
 import os
-from mismatch import adni_reference  
+from mismatch import adni_reference  # now it's a subpackage
 
 
 def AssignGroup(subject_path, biomarker_path, output_path, binarization_sd=0.5, adni_reference_dir=None):
@@ -46,20 +46,13 @@ def AssignGroup(subject_path, biomarker_path, output_path, binarization_sd=0.5, 
 
     
 
+
     def duplicate_specific_features(df):
-
         df = df.copy()
-        amygdala_cols = ["x_left_Amygdala_volume", "x_right_Amygdala_volume"]
-        weight = np.sqrt(7)
-
-        for col in amygdala_cols:
-            if col in df.columns:
-                df[col] = df[col].astype(float) * weight
-            else:
-                raise ValueError(f"❌ Missing expected amygdala column: {col}")
-        
+        for i in range(1, 7):
+            df[f"x_left_Amygdala_volume_dup{i}"] = df["x_left_Amygdala_volume"]
+            df[f"x_right_Amygdala_volume_dup{i}"] = df["x_right_Amygdala_volume"]
         return df
-
 
     
 
@@ -83,7 +76,7 @@ def AssignGroup(subject_path, biomarker_path, output_path, binarization_sd=0.5, 
             dists = [euclidean_na(subj, center) for center in cluster_centers]
             assigned_labels.append(cluster_ids[np.argmin(dists)])
             all_distances.append(dists)
-        cluster_label_map = {1: "Resilient", 2: "Vulnerable", 3: "Canonical"}
+        cluster_label_map = {1: "Vulnerable", 2: "Resilient", 3: "Canonical"}
         dist_col_names = [f"Dist_Cluster{cluster_label_map.get(int(cid), f'Unknown_{cid}')}" for cid in cluster_ids]
         dist_df = pd.DataFrame(all_distances, columns=dist_col_names)
         return assigned_labels, dist_df
@@ -123,7 +116,7 @@ def AssignGroup(subject_path, biomarker_path, output_path, binarization_sd=0.5, 
     assigned_clusters, distance_df = assign_clusters(binary_resid, centroid_df)
 
     result = test_df[["ID"]].copy()
-    cluster_label_map = {1: "Resilient", 2: "Vulnerable", 3: "Canonical"}
+    cluster_label_map = {1: "Vulnerable", 2: "Resilient", 3: "Canonical"}
     result["Assigned_Cluster"] = [cluster_label_map.get(c, f"Unknown_{c}") for c in assigned_clusters]
     result = pd.concat([result, distance_df], axis=1)
     result.to_csv(output_path, index=False)
