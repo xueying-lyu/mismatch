@@ -1,0 +1,6 @@
+ID,MRIDATE,Path
+sub1,2025-01-01,./simulated_data/crashs/sub1/crashs/crashs_left/sub1_2025-01-01_left_template_thickness.vtk
+sub2,2025-01-01,./simulated_data/crashs/sub2/crashs/crashs_left/sub2_2025-01-01_left_template_thickness.vtk
+sub3,2025-01-01,./simulated_data/crashs/sub3/crashs/crashs_left/sub3_2025-01-01_left_template_thickness.vtk
+sub4,2025-01-01,./simulated_data/crashs/sub4/crashs/crashs_left/sub4_2025-01-01_left_template_thickness.vtk
+sub5,2025-01-01,./simulated_data/crashs/sub5/crashs/crashs_left/sub5_2025-01-01_left_template_thickness.vtk

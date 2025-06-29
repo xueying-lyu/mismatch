@@ -1,5 +1,3 @@
-# mismatch/AssignGroup.py
-
 import pandas as pd
 import numpy as np
 import argparse
@@ -95,13 +93,21 @@ def AssignGroup(subject_path, biomarker_path, output_path, binarization_sd=0.5, 
     roi_cols = coeff_df["Region"].unique()
     residual_matrix = pd.DataFrame(index=test_df.index)
 
+    residual_dict = {}
+
     for roi in roi_cols:
         if roi not in test_df.columns:
             print(f"⚠️ Skipping missing ROI in subject data: {roi}")
             continue
         model_row = coeff_df[coeff_df["Region"] == roi].iloc[0]
         pred = test_df.apply(lambda row: predict_thickness(model_row, row["pTau217"], row["ICV"]), axis=1)
-        residual_matrix[roi] = test_df[roi] - pred
+        residual_dict[roi] = test_df[roi] - pred
+
+    # Efficiently create DataFrame from dictionary
+    residual_matrix = pd.DataFrame(residual_dict)
+    residual_matrix.insert(0, "ID", test_df["ID"])  # Add ID column as first column
+
+
 
     residual_matrix = pd.concat([test_df[["ID"]], residual_matrix], axis=1)
 
@@ -144,4 +150,4 @@ if __name__ == "__main__":
         biomarker_path=args.biomarker,
         output_path=args.out,
         adni_reference_dir=args.ref
-    )
+    ) 

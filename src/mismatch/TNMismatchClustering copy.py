@@ -296,8 +296,18 @@ class TNMismatchClustering:
 
         if feature_weights:
             for col in bin_df.columns:
-                if col in feature_weights:
-                    bin_df[col] = bin_df[col].astype(float) * feature_weights[col]
+                base = col.split("_")[0]  # Extract '1002' from '1002_thickness'
+                weight = feature_weights.get(base)
+                if weight is not None:
+                    bin_df[col] = bin_df[col].astype(float) * weight
+
+            unmatched = set(feature_weights.keys()) - set([col.split("_")[0] for col in bin_df.columns])
+            if unmatched:
+                print(f"⚠️ Warning: These features in --feature_weights were not matched to any residual columns: {', '.join(unmatched)}")
+
+
+
+
 
         return bin_df
 
@@ -412,7 +422,7 @@ class TNMismatchClustering:
         print(f"🧬 Dendrogram saved to: {out_path}")
     
     def run_pipeline(self, input_csv, independent, predict, sd_thresh=1.5, n_clusters=None,
-                 output_prefix="output", log_transform=True, generate_maps=True, covariates=None):
+                 output_prefix="output", log_transform=True, generate_maps=True, covariates=None, feature_weights=None):
 
         self.print_centered("🌟 Welcome to the Mismatch Universe! 🌟")
         self.print_centered("🧠 PATCH Lab warmly welcomes you to explore brain heterogenity together!! 😊")
@@ -435,7 +445,8 @@ class TNMismatchClustering:
         residuals.insert(0, "ID", ids)
 
         print(f"📊 Using residuals for clustering (SD={sd_thresh})...")
-        binary_df = self.binarize_residuals(residuals.drop(columns="ID"), sd_thresh)
+        binary_df = self.binarize_residuals(residuals.drop(columns="ID"), sd_thresh, feature_weights=feature_weights)
+
 
         print("🔗 Running Ward.D2 clustering...")
         labels, linkage_matrix = self.run_hierarchical_clustering(binary_df, n_clusters)
@@ -457,7 +468,12 @@ class TNMismatchClustering:
         cluster_heatmap_paths = []
         cluster_nii_paths = []
 
+
+
+
         roi_names = [self.label_map.get(int(r), r) for r in rois] if self.label_map else rois
+        #roi_names = [self.label_map.get(r, r) for r in rois] if self.label_map else rois
+
 
         for cid in sorted(set(labels)):
             cluster_df = residuals[residuals["T_N_cluster"] == cid]

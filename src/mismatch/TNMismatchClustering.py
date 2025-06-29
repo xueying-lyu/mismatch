@@ -217,7 +217,9 @@ class TNMismatchClustering:
         for i in range(n_rois):
             tau = tau_df.iloc[:, i]
             if log_transform:
-                tau = np.log10(tau)
+                #tau = np.log10(tau)
+                tau = np.log10(tau.clip(lower=1e-3))  # or tau[tau > 0]
+
 
             thick = thickness_df.iloc[:, i]
             mask = tau.notna() & thick.notna()
@@ -295,16 +297,18 @@ class TNMismatchClustering:
         bin_df = bin_df.fillna(0)
 
         if feature_weights:
-            unmatched = set(feature_weights.keys()) - set(bin_df.columns)
-            if unmatched:
-                print(f"⚠️ Warning: These features in --feature_weights were not found in residuals: {', '.join(unmatched)}")
-
-        if feature_weights:
             for col in bin_df.columns:
-                base = col.split("_")[0]  # extract e.g., '31' from '31_thickness'
-                weight = feature_weights.get(col) or feature_weights.get(base)
-                if weight:
+                base = col.split("_")[0]  # Extract '1002' from '1002_thickness'
+                weight = feature_weights.get(base)
+                if weight is not None:
                     bin_df[col] = bin_df[col].astype(float) * weight
+
+            unmatched = set(feature_weights.keys()) - set([col.split("_")[0] for col in bin_df.columns])
+            if unmatched:
+                print(f"⚠️ Warning: These features in --feature_weights were not matched to any residual columns: {', '.join(unmatched)}")
+
+
+
 
 
         return bin_df
@@ -342,7 +346,7 @@ class TNMismatchClustering:
                     cluster_types[cid] = "Likely Resilient"
         return cluster_types
 
-    def map_residuals_to_nifti(self, cluster_id, mean_resid, rois, out_path):
+    def map_residuals_to_nifti2(self, cluster_id, mean_resid, rois, out_path):
         seg_img = nib.load(self.seg_path)
         seg_data = seg_img.get_fdata()
         out_data = np.zeros_like(seg_data, dtype=np.float32)
@@ -351,6 +355,43 @@ class TNMismatchClustering:
             out_data[seg_data == label] = value
         out_img = nib.Nifti1Image(out_data, affine=seg_img.affine, header=seg_img.header)
         nib.save(out_img, out_path)
+
+
+    def map_residuals_to_nifti(self, cluster_id, mean_resid, rois, out_path):
+        seg_img = nib.load(self.seg_path)
+        seg_data = seg_img.get_fdata()
+        out_data = np.zeros_like(seg_data, dtype=np.float32)
+
+        reverse_label_map = {v: k for k, v in self.label_map.items()}
+
+        roi_map = {}
+
+        for i, roi in enumerate(rois):
+            try:
+                # Try to parse label ID directly (e.g., "31")
+                label = int(roi)
+                if label in self.label_map:
+                    roi_map[label] = mean_resid[i]
+            except ValueError:
+                # Fall back to region name (e.g., "Left.Amygdala")
+                label = reverse_label_map.get(roi)
+                if label is not None:
+                    roi_map[label] = mean_resid[i]
+
+        if not roi_map:
+            print(f"⚠️ Warning: No matching ROI labels found in atlas for cluster {cluster_id}. NIfTI map will be empty.")
+        else:
+            print(f"✅ Mapped {len(roi_map)} ROIs to atlas labels for cluster {cluster_id}.")
+
+        for label, value in roi_map.items():
+            out_data[seg_data == label] = value
+
+        out_img = nib.Nifti1Image(out_data, affine=seg_img.affine, header=seg_img.header)
+        nib.save(out_img, out_path)
+
+
+
+
 
     def plot_heatmap(self, df, out_path, rois=None, title=None):
         plt.figure(figsize=(max(20, df.shape[1] * 0.3), max(5, df.shape[0] * 0.3)))
@@ -466,7 +507,12 @@ class TNMismatchClustering:
         cluster_heatmap_paths = []
         cluster_nii_paths = []
 
-        roi_names = [self.label_map.get(int(r), r) for r in rois] if self.label_map else rois
+
+
+
+        #roi_names = [self.label_map.get(int(r), r) for r in rois] if self.label_map else rois
+        roi_names = [self.label_map.get(r, r) for r in rois] if self.label_map else rois
+
 
         for cid in sorted(set(labels)):
             cluster_df = residuals[residuals["T_N_cluster"] == cid]
