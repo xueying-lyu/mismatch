@@ -6,3 +6,5 @@ scipy
 matplotlib
 seaborn
 nibabel
+vtk
+pymetis

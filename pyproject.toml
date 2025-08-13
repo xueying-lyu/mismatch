@@ -21,7 +21,10 @@ dependencies = [
   "scipy",
   "matplotlib",
   "seaborn",
-  "nibabel"
+  "nibabel",
+  "vtk", 
+  "pymetis",
+  "nilearn"
 ]
 
 classifiers = [

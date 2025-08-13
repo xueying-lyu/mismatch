@@ -12,4 +12,6 @@ src/mismatch.egg-info/top_level.txt
 src/mismatch/adni_reference/adni_cluster_centroids.csv
 src/mismatch/adni_reference/adni_model_coefficients.csv
 src/mismatch/adni_reference/adni_residual_sd.csv
+src/mismatch/adni_reference/left_partition_membership.npy
+src/mismatch/adni_reference/right_partition_membership.npy
 tests/test_basic.py

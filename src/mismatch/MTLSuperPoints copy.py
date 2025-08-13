@@ -119,7 +119,6 @@ def run_partition_pipeline(subject_csv, template_path, output_dir, num_partition
     args.hemi = hemi
     main_partition(args)
 
-
 def main_partition(args):
     df = pd.read_csv(args.subject_csv)
     template_polydata = read_vtk_mesh(args.template_path)
@@ -128,82 +127,65 @@ def main_partition(args):
     if labels is None:
         raise ValueError("Label array not found in the template VTK file")
 
-    from importlib.resources import files
-    partition_path = files("mismatch.adni_reference").joinpath(f"{args.hemi}_partition_membership.npy")
+    valid_triangle_indices = np.where(labels != 0)[0]
+    filtered_triangles = triangles[valid_triangle_indices]
+    filtered_labels = labels[valid_triangle_indices]
+
+    unique_labels = np.unique(filtered_labels)
+    total_valid_triangles = len(filtered_triangles)
+
+    total_partitions = args.num_partitions
+    label_partitions = {}
+    for label in unique_labels:
+        count = np.sum(filtered_labels == label)
+        label_partitions[label] = max(1, round((count / total_valid_triangles) * total_partitions))
+
+    diff = total_partitions - sum(label_partitions.values())
+    sorted_labels = sorted(label_partitions, key=label_partitions.get, reverse=True)
+    for i in range(abs(diff)):
+        if diff > 0:
+            label_partitions[sorted_labels[i % len(sorted_labels)]] += 1
+        elif diff < 0 and label_partitions[sorted_labels[i % len(sorted_labels)]] > 1:
+            label_partitions[sorted_labels[i % len(sorted_labels)]] -= 1
+
+    partition_offset = 0
+    final_membership = np.full(len(triangles), -1)
+
     summary_file = os.path.join(args.output_dir, f"partition_summary_{args.hemi}.txt")
     os.makedirs(args.output_dir, exist_ok=True)
+    with open(summary_file, 'w') as f:
+        f.write("Partition Summary for Each Label:\n\n")
 
-    if os.path.exists(partition_path):
-        print(f"📥 Loading existing partition: {partition_path}")
-        final_membership = np.load(partition_path)
-    else:
-        print("⚙️ Computing partition from template...")
-        valid_triangle_indices = np.where(labels != 0)[0]
-        filtered_triangles = triangles[valid_triangle_indices]
-        filtered_labels = labels[valid_triangle_indices]
+    for label in unique_labels:
+        label_triangle_indices = np.where(labels == label)[0]
+        label_triangle_indices = np.sort(label_triangle_indices)
+        label_triangles = triangles[label_triangle_indices]
 
-        unique_labels = np.unique(filtered_labels)
-        total_valid_triangles = len(filtered_triangles)
+        vertex_to_triangles = defaultdict(list)
+        adj = []
+        for tri_idx, triangle in enumerate(label_triangles):
+            for vertex in triangle:
+                vertex_to_triangles[vertex].append(tri_idx)
 
-        total_partitions = args.num_partitions
-        label_partitions = {}
-        for label in unique_labels:
-            count = np.sum(filtered_labels == label)
-            label_partitions[label] = max(1, round((count / total_valid_triangles) * total_partitions))
+        for v in range(len(label_triangles)):
+            tri_set = set(label_triangles[v])
+            neighbors = set()
+            for vertex in tri_set:
+                for nb in vertex_to_triangles[vertex]:
+                    if nb != v and len(tri_set.intersection(label_triangles[nb])) >= 2:
+                        neighbors.add(nb)
+            adj.append(list(neighbors))
 
-        diff = total_partitions - sum(label_partitions.values())
-        sorted_labels = sorted(label_partitions, key=label_partitions.get, reverse=True)
-        for i in range(abs(diff)):
-            if diff > 0:
-                label_partitions[sorted_labels[i % len(sorted_labels)]] += 1
-            elif diff < 0 and label_partitions[sorted_labels[i % len(sorted_labels)]] > 1:
-                label_partitions[sorted_labels[i % len(sorted_labels)]] -= 1
+        n_parts = label_partitions[label]
+        _, membership = pymetis.part_graph(n_parts, adjacency=adj)
+        global_membership = np.array(membership) + partition_offset
+        final_membership[label_triangle_indices] = global_membership
 
-        partition_offset = 0
-        final_membership = np.full(len(triangles), -1)
+        with open(summary_file, 'a') as f:
+            f.write(f"Label {int(label)} -> Partitions: {sorted(set(global_membership))}\n")
 
-        with open(summary_file, 'w') as f:
-            f.write("Partition Summary for Each Label:\n\n")
+        partition_offset += n_parts
 
-        for label in unique_labels:
-            label_triangle_indices = np.where(labels == label)[0]
-            label_triangle_indices = np.sort(label_triangle_indices)
-            label_triangles = triangles[label_triangle_indices]
-
-            vertex_to_triangles = defaultdict(list)
-            adj = []
-            for tri_idx, triangle in enumerate(label_triangles):
-                for vertex in triangle:
-                    vertex_to_triangles[vertex].append(tri_idx)
-
-            for v in range(len(label_triangles)):
-                tri_set = set(label_triangles[v])
-                neighbors = set()
-                for vertex in tri_set:
-                    for nb in vertex_to_triangles[vertex]:
-                        if nb != v and len(tri_set.intersection(label_triangles[nb])) >= 2:
-                            neighbors.add(nb)
-                adj.append(list(neighbors))
-
-            n_parts = label_partitions[label]
-            _, membership = pymetis.part_graph(n_parts, adjacency=adj)
-            global_membership = np.array(membership) + partition_offset
-            final_membership[label_triangle_indices] = global_membership
-
-            with open(summary_file, 'a') as f:
-                f.write(f"Label {int(label)} -> Partitions: {sorted(set(global_membership))}\n")
-
-            partition_offset += n_parts
-
-        # ✅ Save partition
-        #print(f"🧪 Saving partition to: {partition_path}")
-        #np.save(partition_path, final_membership)
-        #if os.path.exists(partition_path):
-        #    print(f"💾 Partition saved successfully to: {partition_path}")
-        #else:
-        #    raise RuntimeError(f"❌ Failed to save partition to: {partition_path}")
-
-    # Process each subject using the partition
     vertices = vtk_to_numpy(template_polydata.GetPoints().GetData())
     for _, row in df.iterrows():
         ID, MRIDATE = row['ID'], row['MRIDATE']
@@ -216,8 +198,7 @@ def main_partition(args):
             continue
 
         out_txt = os.path.join(args.output_dir, f"mean_thickness_{ID}_{MRIDATE}_{args.hemi}.txt")
-        compute_mean_thickness(thickness_path, triangles, final_membership, ID, MRIDATE, out_txt, args.num_partitions)
-
+        compute_mean_thickness(thickness_path, triangles, final_membership, ID, MRIDATE, out_txt, total_partitions)
 
 def create_MTLSuperPoints(left_csv, right_csv, template_left, template_right, output_dir, num_partitions, final_csv):
     run_partition_pipeline(left_csv, template_left, output_dir, num_partitions, "left")
@@ -234,6 +215,7 @@ def main():
     parser.add_argument("--template_left", required=True)
     parser.add_argument("--template_right", required=True)
     parser.add_argument("--output_dir", required=True)
+    parser.add_argument("--num_partitions", type=int, default=50)
     parser.add_argument("--final_csv", required=True)
     args = parser.parse_args()
 
@@ -243,6 +225,7 @@ def main():
         args.template_left,
         args.template_right,
         args.output_dir,
+        args.num_partitions,
         args.final_csv
     )
 

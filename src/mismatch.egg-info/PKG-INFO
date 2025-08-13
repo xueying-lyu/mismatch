@@ -43,6 +43,8 @@ Requires-Dist: scipy
 Requires-Dist: matplotlib
 Requires-Dist: seaborn
 Requires-Dist: nibabel
+Requires-Dist: vtk
+Requires-Dist: pymetis
 Dynamic: license-file
 
 # mismatch: A Python Package for Modeling Biomarker Discordance
@@ -105,7 +107,7 @@ Core Functionalities
 The `mismatch` package is organized into modular components centered around three core functionalities:
 
 ## 1. mismatch modeling and phenotypic discovery
-### - `mismatch.MTLSuperPoints` 
+### - `mismatch.TNMismatchClustering` 
 **Purpose**: Identifies mismatch-based phenotypes by modeling regional discordance between an independent biomarker (e.g., tau) and a predicted biomarker (e.g., neurodegeneration). It applies robust linear regression to model the expected relationship between biomarkers, calculates subject-level regional residuals as mismatch, and cluster indviduals into data-driven phenotypes based on these mismatch patterns. This enables identification of canonical (N~T), vulnerable (N>T), and resilient (N<T) phenotypes with distinct mismatch patterns.
 
 The module generates:
@@ -132,7 +134,7 @@ We provide this group assignment functionality in the mismatch package, enabling
 This step requires preprocessing structural MRI data using the [CRASHS](https://github.com/pyushkevich/crashs) pipeline, which generates surface meshes aligned to an MTL template for consistent feature extraction across subjects.
 
 ### - `mismatch.AssignGroup`  
-**Purpose**: Assigns each subject to one of the pretrained T-N mismatch phenotypes using ADNI-derived centroids and standardization parameters. This allows fast, reproducible group membership assignment aligned with established subtypes.
+**Purpose**: Assigns each subject to one of the pretrained T-N mismatch phenotypes using ADNI-derived centroids and standardization parameters. This allows fast, individualized group membership assignment aligned with established groups without need to redo clustering.
 
 This individual-level assignment module supports scalable phenotyping in new datasets and clinical applications.
 
@@ -159,8 +161,9 @@ Run `python3 -m mismatch TNMismatchclustering --help` to view available options:
 * `--predict` Biomarker to be predicted (e.g., thickness. Must match column pattern like regionX_thickness).
 * `--sd` Standard deviation threshold for residual binarization (default = 1.5) for clustering. Use 0 to disable and use raw residual for clustering.
 * `--n_clusters` Choose number of clusters for hierarchical clustering. If not specified, the optimal number estimated by elbow method is used.
-* `--cov` Optional covariates for modeling included in the input CSV (e.g., age). For ROI-specific, use *variable_name to match ROI names (e.g., *amyloid,  CSV must contain regionX_amyloid). 
-* `--atlas` Choose predefined atlas to use (DKT or BrainCOLOR)
+* `--cov` Optional covariates for modeling included in the input CSV (e.g., age). This will add age as covariate for all regions. For ROI-specific, use *variable_name to match ROI names (e.g., *amyloid,  CSV must contain regionX_amyloid). This will only include amyloid as covariate for regionX with regionX_amyloid columns in the input csv. 
+* `--feature_weights` Optional weights to apply to each ROI’s binarized mismatch value before clustering. Provide as comma-separated region:weight pairs (e.g.,region31:2.65,region32:1.5). These weights scale the contribution of each ROI in the clustering step.
+* `--atlas` Choose predefined atlas to use (DKT or BrainCOLOR). It cannot be used together with --custom_atlas_path or --custom_label_csv
 * `--custom_atlas_path` Path to custom atlas segmentation NIfTI file if not using predefined atlas. Must be used with --custom_label_csv.
 * `--custom_label_csv` Path to a CSV mapping segmentation label indices to region names.(Required if using --custom_atlas_path.)(CSV should include columns like LabelID, LabelName.)
 * `--no_log` If set, do NOT apply log10 to the independent variable (tau).
@@ -180,7 +183,8 @@ python -m mismatch TNMismatchClustering \
   --plot \
   --require_residual_map \
   --atlas BrainCOLOR \
-  --cov *amyloid age
+  --cov *amyloid age \
+  --feature_weights 31:2.64,32:2.64
 ```
 
 **! Note**:
@@ -258,3 +262,4 @@ We're continuously working to improve and expand the toolkit. Contributions, iss
 
 
 ---
+

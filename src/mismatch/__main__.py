@@ -73,7 +73,7 @@ def main():
     mtl_parser.add_argument("--output_dir", required=True,
                             help=" Directory to store output VTK and thickness .txt files.")
     mtl_parser.add_argument("--num_partitions", type=int, default=50,
-                            help=" Total number of triangle partitions (default = 50).")
+                            help=" Total number of triangle partitions (default = 50), and required to use 50.")
     mtl_parser.add_argument("--final_csv", required=True,
                             help=" Output CSV with merged left and right mean thickness per subject.")
 

@@ -140,14 +140,16 @@ BrainCOLOR_LABEL_MAP = {
     35: 'Brain.Stem', 36: 'Right.Caudate', 37: 'Left.Caudate',
     44: 'Right.Cerebral.White.Matter', 45: 'Left.Cerebral.White.Matter'
 }
+from importlib.resources import files
+
 
 ATLAS_CONFIG = {
     "DKT": {
-        "path": "/project/wolk/xyl/tn_mismatch/tn_mismatch/preprocess/tpl-ADNINormalAgingANTs_res-01_atlas-DKT_desc-31_dseg.nii.gz",
+        "path": files("mismatch.atlas").joinpath("tpl-ADNINormalAgingANTs_res-01_atlas-DKT_desc-31_dseg.nii.gz"),
         "label_map": DKT_LABEL_MAP
     },
     "BrainCOLOR": {
-        "path": "/project/wolk/xyl/tn_mismatch/tn_mismatch/preprocess/antsMalfLabeling.nii.gz",
+        "path": files("mismatch.atlas").joinpath("antsMalfLabeling.nii.gz"),
         "label_map": BrainCOLOR_LABEL_MAP
     }
 }

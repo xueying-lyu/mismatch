@@ -1,3 +1,7 @@
 include README.md
 include LICENSE
 recursive-include src/mismatch/adni_reference *.csv
+recursive-include src/mismatch/adni_reference *.npy
+recursive-include src/mismatch/atlas *.nii.gz
+recursive-include simulated_data/*
+

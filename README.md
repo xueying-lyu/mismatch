@@ -2,7 +2,7 @@
 
 `mismatch` is a Python package and analysis pipeline for modeling discordance between biological markers, with a focus on neuroimaging and biomarker data in Alzheimer’s disease.
 
-The `mismatch` approach was originally developed to study the discordance between tau pathology (T) and neurodegeneration (N) in Alzheimer's disease (AD), with the goal of identifying phenotypes associated with non-AD factors. It enables the discovery of spatially distinct **T-N phenotypes** by clustering regional mismatch patterns: 
+The `mismatch` approach was originally developed to study the discordance between tau pathology (T) and neurodegeneration (N) in Alzheimer's disease (AD), with the goal of identifying phenotypes associated with non-AD factors beyond tau driving neurodegeneration. It enables the discovery of spatially distinct **T-N phenotypes** by clustering regional mismatch patterns: 
 
 - ⚫ **Canonical (N ~ T)**: Neurodegeneration aligns with tau burden, reflecting typical AD patients.
 - 🔴 **Vulnerable (N > T)**: Greater-than-expected neurodegeneration, suggesting additional co-morbidities (e.g., LATE, vascular).
@@ -10,7 +10,7 @@ The `mismatch` approach was originally developed to study the discordance betwee
 
 Acknowledgement
 ============
-If use `mismatch`, please cite the following core papers:
+If you use `mismatch`, please cite the following core papers:
 
 [Tau-neurodegeneration mismatch reveals vulnerability and resilience to comorbidities in Alzheimer's continuum](https://alz-journals.onlinelibrary.wiley.com/doi/full/10.1002/alz.13559)
 
@@ -105,14 +105,14 @@ The toolkit supports three command-line modes:
 
 ### TNMismatchClustering
 
-Run `python3 -m mismatch TNMismatchclustering --help` to view available options: 
+Run `python3 -m mismatch TNMismatchClustering --help` to view available options: 
 
 * `--input` Path to the input CSV containing ROI-level biomarker data (e.g., region1_tau, region1_thickness, region2_tau, region2_thickness).
 * `--independent` Biomarker used as the predictor (e.g., tau. Must match column pattern like regionX_tau). 
 * `--predict` Biomarker to be predicted (e.g., thickness. Must match column pattern like regionX_thickness).
 * `--sd` Standard deviation threshold for residual binarization (default = 1.5) for clustering. Use 0 to disable and use raw residual for clustering.
 * `--n_clusters` Choose number of clusters for hierarchical clustering. If not specified, the optimal number estimated by elbow method is used.
-* `--cov` Optional covariates for modeling included in the input CSV (e.g., age). This will add age as covariate for all regions. For ROI-specific, use *variable_name to match ROI names (e.g., *amyloid,  CSV must contain regionX_amyloid). This will only include amyloid as covariate for regionX with regionX_amyloid columns in the input csv. 
+* `--cov` Optional covariates for modeling included in the input CSV (e.g., age). This will add age as covariate for all regions. For ROI-specific, use *variable_name to match ROI names (e.g., "*amyloid",  CSV must contain regionX_amyloid). This will only include amyloid as covariate for regionX with regionX_amyloid columns in the input csv. 
 * `--feature_weights` Optional weights to apply to each ROI’s binarized mismatch value before clustering. Provide as comma-separated region:weight pairs (e.g.,region31:2.65,region32:1.5). These weights scale the contribution of each ROI in the clustering step.
 * `--atlas` Choose predefined atlas to use (DKT or BrainCOLOR). It cannot be used together with --custom_atlas_path or --custom_label_csv
 * `--custom_atlas_path` Path to custom atlas segmentation NIfTI file if not using predefined atlas. Must be used with --custom_label_csv.
@@ -123,10 +123,10 @@ Run `python3 -m mismatch TNMismatchclustering --help` to view available options:
 
 example using neuroimaging biomarkers: 
 ```bash
-python -m mismatch TNMismatchClustering \
-  --input example/ADNI_A_pos_braincolor.csv \
+python3 -m mismatch TNMismatchClustering \
+  --input simulated_data/simulated_data_BrainCOLOR_label_names.csv \
   --out results/demo_run_clusters.csv \
-  --out_resid output/demo_run_mismatch_output.csv \
+  --out_resid results/demo_run_mismatch_output.csv \
   --independent tau \
   --predict thickness \
   --sd 1.5 \
@@ -134,7 +134,7 @@ python -m mismatch TNMismatchClustering \
   --plot \
   --require_residual_map \
   --atlas BrainCOLOR \
-  --cov *amyloid age \
+  --cov "*amy" "age" \
   --feature_weights 31:2.64,32:2.64
 ```
 
@@ -164,20 +164,19 @@ Run `python3 -m mismatch MTLSuperPoints` --help to view available options:
 `--left_csv`, `--right_csv` CSV files containing subject IDs, scan dates, and mesh paths for left/right hemisphere. \
 `--template_left`, `--template_right` Template meshes vtk file with anatomical label arrays.\
 `--output_dir` Directory to save output files (including parcellations and subject level thickness txt).\
-`--num_partitions` Number of triangle partitions per hemisphere (default = 50).\
+`--num_partitions` Number of triangle partitions per hemisphere (default = 50). Required to use 50 for doing the same T-N group assignment \
 `--final_csv` Output CSV with merged thickness measures across parcellated super-points for each subject.
 
 Example:
 
 ```bash
-python -m mismatch MTLSuperPoints \
-  --left_csv example/left_input.csv \
-  --right_csv example/right_input.csv \
-  --template_left example/template_left.vtk \
-  --template_right example/template_right.vtk \
-  --output_dir output/vtk_thickness \
-  --num_partitions 50 \
-  --final_csv output/thickness_summary.csv
+python3 -m mismatch MTLSuperPoints \
+  --left_csv ./simulated_data/crashs/simulated_manifest_left.csv \
+  --right_csv ./simulated_data/crashs/simulated_manifest_right.csv \
+  --template_left ./simulated_data/crashs/template_shoot_left.vtk \
+  --template_right ./simulated_data/crashs/template_shoot_right.vtk \
+  --output_dir results/crashs_output \
+  --final_csv results/crashs_output/final_output.csv
 ```
 
 -**`AssignGroup`**
@@ -191,10 +190,10 @@ Run `python3 -m mismatch AssignGroup --help` to view available options:
 
 Example:
 ```bash
-python -m mismatch AssignGroup \
-  --subject output/thickness_summary.csv \
-  --biomarker example/biomarker_features.csv \
-  --out output/assigned_groups.csv
+python3 -m mismatch AssignGroup \
+  --subject results/crashs_output/final_output.csv \
+  --biomarker ./simulated_data/crashs/simulated_biomarkers.csv \
+  --out results/Assigned_TN_Phenotype.csv  
 ```
 
 Join the mismatch Universe and Stay Curious
@@ -213,4 +212,8 @@ We're continuously working to improve and expand the toolkit. Contributions, iss
 
 
 ---
+
+
+
+
 
