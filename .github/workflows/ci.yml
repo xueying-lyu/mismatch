@@ -12,28 +12,17 @@ permissions:
 jobs:
   build-and-publish:
     runs-on: ubuntu-latest
+    environment: pypi   # must match the “Environment” you set on PyPI
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
         with:
           python-version: '3.x'
-
-      - name: Install dependencies
-        run: |
+      - run: |
           python -m pip install --upgrade pip
           pip install build pytest
-
-      - name: Run tests
-        run: |
-          pytest tests/
-
-      - name: Build package
-        run: python -m build
-
-      - name: Publish to TestPyPI
+      - run: pytest tests/    # remove or guard if you don't have tests
+      - run: python -m build
+      - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          repository-url: https://test.pypi.org/legacy/
+        # no repository-url -> real PyPI
