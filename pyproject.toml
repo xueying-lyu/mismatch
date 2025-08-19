@@ -1,0 +1,39 @@
+[build-system]
+requires = ["hatchling>=1.25.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "mismatch"
+version = "0.1.4"
+description = "Mismatch clustering for tau and neurodegeneration residuals in Alzheimer's Disease"
+readme = "README.md"
+requires-python = ">=3.8"
+authors = [{ name = "Xueying Lyu", email = "xylyu@seas.upenn.edu" }]
+license = { file = "LICENSE" }
+dependencies = [
+  "pandas","numpy","statsmodels","scikit-learn","scipy",
+  "matplotlib","seaborn","nibabel","vtk","pymetis","nilearn"
+]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+  "Intended Audience :: Science/Research",
+  "Development Status :: 4 - Beta",
+  "Topic :: Scientific/Engineering :: Medical Science Apps."
+]
+
+[project.urls]
+Homepage = "https://github.com/xueying-lyu/mismatch"
+Repository = "https://github.com/xueying-lyu/mismatch"
+Issues = "https://github.com/xueying-lyu/mismatch/issues"
+
+[project.scripts]
+mismatch = "mismatch.__main__:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/mismatch"]
+
+[tool.hatch.build.targets.sdist]
+include = ["src/mismatch", "README.md", "LICENSE"]
+
