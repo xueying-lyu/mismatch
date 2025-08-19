@@ -12,11 +12,15 @@ Acknowledgement
 ============
 If you use `mismatch`, please cite the following core papers:
 
+[Medial temporal lobe Tau-Neurodegeneration mismatch from MRI and plasma biomarkers identifies vulnerable and resilient phenotypes with AD](https://www.medrxiv.org/content/10.1101/2025.08.17.25333859v1)
+
 [Tau-neurodegeneration mismatch reveals vulnerability and resilience to comorbidities in Alzheimer's continuum](https://alz-journals.onlinelibrary.wiley.com/doi/full/10.1002/alz.13559)
 
 [Tau-Atrophy Variability Reveals Phenotypic Heterogeneity in Alzheimer's Disease](https://onlinelibrary.wiley.com/doi/10.1002/ana.26233)
 
 [Dissociation of tau pathology and neuronal hypometabolism within the ATN framework of Alzheimer’s disease](https://www.nature.com/articles/s41467-022-28941-1)
+
+Thank you for supporting this project!
 
 ---
 
@@ -212,6 +216,7 @@ We're continuously working to improve and expand the toolkit. Contributions, iss
 
 
 ---
+
 
 
 
